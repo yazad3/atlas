@@ -12,10 +12,12 @@ import org.openstreetmap.atlas.geography.Location;
 import org.openstreetmap.atlas.geography.PolyLine;
 import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.Rectangle;
+import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.builder.RelationBean;
 import org.openstreetmap.atlas.geography.atlas.builder.RelationBean.RelationBeanItem;
 import org.openstreetmap.atlas.geography.atlas.complete.CompleteArea;
 import org.openstreetmap.atlas.geography.atlas.complete.CompleteEdge;
+import org.openstreetmap.atlas.geography.atlas.complete.CompleteEntity;
 import org.openstreetmap.atlas.geography.atlas.complete.CompleteLine;
 import org.openstreetmap.atlas.geography.atlas.complete.CompleteNode;
 import org.openstreetmap.atlas.geography.atlas.complete.CompletePoint;
@@ -30,14 +32,44 @@ import org.openstreetmap.atlas.geography.atlas.items.Relation;
 import org.openstreetmap.atlas.geography.atlas.items.RelationMemberList;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.collections.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author lcram
+ * @author Yazad Khambata 
  */
 public class FeatureChangeMergerTest
 {
+    private static final Logger log = LoggerFactory.getLogger(FeatureChangeMergerTest.class);
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
+
+    @Rule
+    public final FeatureChangeMergerTestRule featureChangeMergerTestRule = new FeatureChangeMergerTestRule();
+
+    @Test
+    public void testMergePoint()
+    {
+        final Atlas atlas = featureChangeMergerTestRule.getAtlas();
+        log.info("atlas: {}.", atlas);
+
+        final CompleteNode completeNode = CompleteNode.from(atlas.node(1)).withAddedTag("ADD1", "ME");
+        final FeatureChange featureChange1 = FeatureChange.add(completeNode, atlas);
+        final Change change1 = new Change().add(featureChange1);
+
+        final ChangeAtlas changeAtlas1 = new ChangeAtlas(atlas, change1);
+
+        log.info("changeAtlas1: {}.", changeAtlas1);
+
+        final CompleteNode completeNode2 = CompleteNode.from(changeAtlas1.node(1)).withAddedTag("ADD2", "ME");
+        final FeatureChange featureChange2 = FeatureChange.add(completeNode2, changeAtlas1);
+        final Change change2 = new Change().add(featureChange2);
+
+        final ChangeAtlas changeAtlas2 = new ChangeAtlas(changeAtlas1, change2);
+
+        log.info("changeAtlas2: {}.", changeAtlas2);
+    }
 
     @Test
     public void testMergeAreasFail()
@@ -82,7 +114,7 @@ public class FeatureChangeMergerTest
          * updated correctly.
          */
         Assert.assertEquals(Maps.hashMap("a", "1", "b", "12", "d", "4", "y", "25", "z", "26"),
-                ((Area) merged.getAfterView()).getTags());
+                merged.getAfterView().getTags());
 
         Assert.assertEquals(Polygon.SILICON_VALLEY_2, ((Area) merged.getAfterView()).asPolygon());
     }
@@ -111,17 +143,16 @@ public class FeatureChangeMergerTest
         Assert.assertEquals(Polygon.SILICON_VALLEY, ((Area) merged.getAfterView()).asPolygon());
 
         Assert.assertEquals(Maps.hashMap("a", "1", "b", "2", "c", "3"),
-                ((Area) merged.getAfterView()).getTags());
+                merged.getAfterView().getTags());
 
-        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L, 4L), ((Area) merged.getAfterView()).relations()
-                .stream().map(relation -> relation.getIdentifier()).collect(Collectors.toSet()));
+        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L, 4L), merged.getAfterView().relations().stream()
+                .map(relation -> relation.getIdentifier()).collect(Collectors.toSet()));
 
         // Test that the beforeView was merged properly
-        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"),
-                ((Area) merged.getBeforeView()).getTags());
+        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"), merged.getBeforeView().getTags());
 
-        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L), ((Area) merged.getBeforeView()).relations()
-                .stream().map(relation -> relation.getIdentifier()).collect(Collectors.toSet()));
+        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L), merged.getBeforeView().relations().stream()
+                .map(relation -> relation.getIdentifier()).collect(Collectors.toSet()));
     }
 
     @Test
@@ -276,10 +307,10 @@ public class FeatureChangeMergerTest
         Assert.assertEquals(PolyLine.TEST_POLYLINE_2, ((Line) merged.getAfterView()).asPolyLine());
 
         Assert.assertEquals(Maps.hashMap("a", "1", "b", "12", "c", "3"),
-                ((Line) merged.getAfterView()).getTags());
+                merged.getAfterView().getTags());
 
-        Assert.assertEquals(Sets.hashSet(2L, 3L, 4L), ((Line) merged.getAfterView()).relations()
-                .stream().map(relations -> relations.getIdentifier()).collect(Collectors.toSet()));
+        Assert.assertEquals(Sets.hashSet(2L, 3L, 4L), merged.getAfterView().relations().stream()
+                .map(relations -> relations.getIdentifier()).collect(Collectors.toSet()));
     }
 
     @Test
@@ -304,16 +335,15 @@ public class FeatureChangeMergerTest
          */
 
         Assert.assertEquals(Maps.hashMap("a", "1", "b", "2", "c", "3"),
-                ((Line) merged.getAfterView()).getTags());
+                merged.getAfterView().getTags());
 
-        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L, 4L), ((Line) merged.getAfterView()).relations()
-                .stream().map(relations -> relations.getIdentifier()).collect(Collectors.toSet()));
+        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L, 4L), merged.getAfterView().relations().stream()
+                .map(relations -> relations.getIdentifier()).collect(Collectors.toSet()));
 
         // Test that the beforeView was merged properly
-        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"),
-                ((Line) merged.getBeforeView()).getTags());
-        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L), ((Line) merged.getBeforeView()).relations()
-                .stream().map(relations -> relations.getIdentifier()).collect(Collectors.toSet()));
+        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"), merged.getBeforeView().getTags());
+        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L), merged.getBeforeView().relations().stream()
+                .map(relations -> relations.getIdentifier()).collect(Collectors.toSet()));
     }
 
     @Test
@@ -366,8 +396,7 @@ public class FeatureChangeMergerTest
          * We can safely add [c=3] since one side added, and the other did not remove or add a
          * conflicting value for 'c'.
          */
-        Assert.assertEquals(Maps.hashMap("a", "1", "c", "3"),
-                ((Node) merged.getAfterView()).getTags());
+        Assert.assertEquals(Maps.hashMap("a", "1", "c", "3"), merged.getAfterView().getTags());
 
         Assert.assertEquals(Sets.hashSet(1L, 2L, 3L, 4L, 5L), ((Node) merged.getAfterView())
                 .inEdges().stream().map(edge -> edge.getIdentifier()).collect(Collectors.toSet()));
@@ -400,15 +429,13 @@ public class FeatureChangeMergerTest
          * We check that the modify tag ADD [b=12] gets merged properly. Also, we check that the
          * inEdges set merged properly.
          */
-        Assert.assertEquals(Maps.hashMap("a", "1", "b", "12"),
-                ((Node) merged.getAfterView()).getTags());
+        Assert.assertEquals(Maps.hashMap("a", "1", "b", "12"), merged.getAfterView().getTags());
 
         Assert.assertEquals(Sets.hashSet(1L, 2L, 3L, 4L), ((Node) merged.getAfterView()).inEdges()
                 .stream().map(edge -> edge.getIdentifier()).collect(Collectors.toSet()));
 
         // Test that the beforeView was merged properly
-        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"),
-                ((Node) merged.getBeforeView()).getTags());
+        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"), merged.getBeforeView().getTags());
 
         Assert.assertEquals(Sets.treeSet(1L, 2L, 3L), ((Node) merged.getBeforeView()).inEdges()
                 .stream().map(edge -> edge.getIdentifier()).collect(Collectors.toSet()));
@@ -456,7 +483,7 @@ public class FeatureChangeMergerTest
          * location updated properly.
          */
         Assert.assertEquals(Maps.hashMap("a", "1", "b", "2", "c", "3"),
-                ((Point) merged.getAfterView()).getTags());
+                merged.getAfterView().getTags());
 
         Assert.assertEquals(Location.EIFFEL_TOWER, ((Point) merged.getAfterView()).getLocation());
     }
@@ -483,18 +510,16 @@ public class FeatureChangeMergerTest
          * parent relations set is merged.
          */
         Assert.assertEquals(Maps.hashMap("a", "1", "b", "2", "c", "3"),
-                ((Point) merged.getAfterView()).getTags());
+                merged.getAfterView().getTags());
 
-        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L, 4L),
-                ((Point) merged.getAfterView()).relations().stream()
-                        .map(relation -> relation.getIdentifier()).collect(Collectors.toSet()));
+        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L, 4L), merged.getAfterView().relations().stream()
+                .map(relation -> relation.getIdentifier()).collect(Collectors.toSet()));
 
         // Test that the beforeView was merged properly
-        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"),
-                ((Point) merged.getBeforeView()).getTags());
+        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"), merged.getBeforeView().getTags());
 
-        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L), ((Point) merged.getBeforeView()).relations()
-                .stream().map(relation -> relation.getIdentifier()).collect(Collectors.toSet()));
+        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L), merged.getBeforeView().relations().stream()
+                .map(relation -> relation.getIdentifier()).collect(Collectors.toSet()));
     }
 
     @Test
@@ -655,8 +680,7 @@ public class FeatureChangeMergerTest
         /*
          * Check that all the relation fields merged correctly.
          */
-        Assert.assertEquals(Maps.hashMap("b", "100", "c", "3"),
-                ((Relation) merged.getAfterView()).getTags());
+        Assert.assertEquals(Maps.hashMap("b", "100", "c", "3"), merged.getAfterView().getTags());
 
         final RelationBean goldenMergedMemberBean = new RelationBean();
         goldenMergedMemberBean.addItem(new RelationBeanItem(1L, "areaRole1", ItemType.AREA));
@@ -668,7 +692,7 @@ public class FeatureChangeMergerTest
 
         Assert.assertEquals(
                 Rectangle.forLocated(Rectangle.TEST_RECTANGLE, Rectangle.TEST_RECTANGLE_2),
-                ((Relation) merged.getAfterView()).bounds());
+                merged.getAfterView().bounds());
 
         final RelationBean goldenMergedOsmBean = new RelationBean();
         goldenMergedOsmBean.addItem(new RelationBeanItem(2L, "lineRole2", ItemType.LINE));
@@ -683,8 +707,8 @@ public class FeatureChangeMergerTest
         Assert.assertEquals(new Long(1234567L),
                 ((Relation) merged.getAfterView()).osmRelationIdentifier());
 
-        Assert.assertEquals(Sets.hashSet(2L, 3L, 4L), ((Relation) merged.getAfterView()).relations()
-                .stream().map(Relation::getIdentifier).collect(Collectors.toSet()));
+        Assert.assertEquals(Sets.hashSet(2L, 3L, 4L), merged.getAfterView().relations().stream()
+                .map(Relation::getIdentifier).collect(Collectors.toSet()));
     }
 
     @Test
@@ -727,8 +751,7 @@ public class FeatureChangeMergerTest
         /*
          * Check that the before and after views merged correctly.
          */
-        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"),
-                ((Relation) merged.getAfterView()).getTags());
+        Assert.assertEquals(Maps.hashMap("a", "1", "b", "2"), merged.getAfterView().getTags());
 
         final RelationBean goldenMergedMemberBean = new RelationBean();
         goldenMergedMemberBean.addItem(new RelationBeanItem(1L, "areaRole1", ItemType.AREA));
@@ -749,12 +772,12 @@ public class FeatureChangeMergerTest
         Assert.assertEquals(new Long(1234567L),
                 ((Relation) merged.getAfterView()).osmRelationIdentifier());
 
-        Assert.assertEquals(Sets.hashSet(1L, 2L), ((Relation) merged.getAfterView()).relations()
-                .stream().map(Relation::getIdentifier).collect(Collectors.toSet()));
+        Assert.assertEquals(Sets.hashSet(1L, 2L), merged.getAfterView().relations().stream()
+                .map(Relation::getIdentifier).collect(Collectors.toSet()));
 
         // Check merged before view
         Assert.assertEquals(Maps.hashMap("a", "1", "b", "2", "c", "3"),
-                ((Relation) merged.getBeforeView()).getTags());
+                merged.getBeforeView().getTags());
 
         Assert.assertEquals(beforeMemberBean1,
                 ((Relation) merged.getBeforeView()).members().asBean());
@@ -769,7 +792,7 @@ public class FeatureChangeMergerTest
         Assert.assertEquals(new Long(123456L),
                 ((Relation) merged.getBeforeView()).osmRelationIdentifier());
 
-        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L), ((Relation) merged.getBeforeView())
-                .relations().stream().map(Relation::getIdentifier).collect(Collectors.toSet()));
+        Assert.assertEquals(Sets.hashSet(1L, 2L, 3L), merged.getBeforeView().relations().stream()
+                .map(Relation::getIdentifier).collect(Collectors.toSet()));
     }
 }
