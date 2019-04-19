@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author lcram
- * @author Yazad Khambata 
+ * @author Yazad Khambata
  */
 public class FeatureChangeMergerTest
 {
@@ -56,19 +56,53 @@ public class FeatureChangeMergerTest
 
         final CompleteNode completeNode = CompleteNode.from(atlas.node(1)).withAddedTag("ADD1", "ME");
         final FeatureChange featureChange1 = FeatureChange.add(completeNode, atlas);
-        final Change change1 = new Change().add(featureChange1);
+        final Change change1 = ChangeBuilder.newInstance().add(featureChange1).get();//new Change().add(featureChange1);
 
         final ChangeAtlas changeAtlas1 = new ChangeAtlas(atlas, change1);
 
         log.info("changeAtlas1: {}.", changeAtlas1);
 
         final CompleteNode completeNode2 = CompleteNode.from(changeAtlas1.node(1)).withAddedTag("ADD2", "ME");
-        final FeatureChange featureChange2 = FeatureChange.add(completeNode2, changeAtlas1);
-        final Change change2 = new Change().add(featureChange2);
+        final FeatureChange featureChange2 = FeatureChange.add(completeNode2, changeAtlas1); //INSTEAD OF::- final FeatureChange featureChange2 = FeatureChange.add(completeNode2);
+        final Change change2 = ChangeBuilder.newInstance().add(featureChange2).get();//new Change().add(featureChange2);
 
         final ChangeAtlas changeAtlas2 = new ChangeAtlas(changeAtlas1, change2);
 
         log.info("changeAtlas2: {}.", changeAtlas2);
+
+//        org.openstreetmap.atlas.exception.CoreException: FeatureChange is not useful: beforeView perfectly matched afterView: CompleteNode [identifier=1, inEdgeIdentifiers=[], outEdgeIdentifiers=[], location=POINT (0 0), tags={country=XYZ, replace=me, delete=me, ADD1=ME, ADD2=ME}, relationIdentifiers=[]] vs CompleteNode [identifier=1, inEdgeIdentifiers=[], outEdgeIdentifiers=[], location=POINT (0 0), tags={country=XYZ, replace=me, delete=me, ADD1=ME, ADD2=ME}, relationIdentifiers=[]]
+//
+//        at org.openstreetmap.atlas.geography.atlas.validators.FeatureChangeUsefulnessValidator.validateFeatureChange(FeatureChangeUsefulnessValidator.java:179)
+//        at org.openstreetmap.atlas.geography.atlas.validators.FeatureChangeUsefulnessValidator.validate(FeatureChangeUsefulnessValidator.java:32)
+//        at org.openstreetmap.atlas.geography.atlas.change.FeatureChange.withAtlasContext(FeatureChange.java:223)
+//        at org.openstreetmap.atlas.geography.atlas.change.FeatureChange.add(FeatureChange.java:100)
+//        at org.openstreetmap.atlas.geography.atlas.change.FeatureChangeMergerTest.testMergePoint(FeatureChangeMergerTest.java:65)
+//        at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+//        at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+//        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+//        at java.lang.reflect.Method.invoke(Method.java:498)
+//        at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+//        at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+//        at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+//        at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+//        at org.junit.rules.ExpectedException$ExpectedExceptionStatement.evaluate(ExpectedException.java:239)
+//        at org.openstreetmap.atlas.utilities.testing.CoreTestRule$1.evaluate(CoreTestRule.java:208)
+//        at org.junit.rules.RunRules.evaluate(RunRules.java:20)
+//        at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+//        at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+//        at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+//        at org.junit.runners.ParentRunner$3.run(ParentRunner.java:290)
+//        at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:71)
+//        at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+//        at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+//        at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:268)
+//        at org.junit.runners.ParentRunner.run(ParentRunner.java:363)
+//        at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+//        at com.intellij.junit4.JUnit4IdeaTestRunner.startRunnerWithArgs(JUnit4IdeaTestRunner.java:68)
+//        at com.intellij.rt.execution.junit.IdeaTestRunner$Repeater.startRunnerWithArgs(IdeaTestRunner.java:47)
+//        at com.intellij.rt.execution.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:242)
+//        at com.intellij.rt.execution.junit.JUnitStarter.main(JUnitStarter.java:70)
+
     }
 
     @Test
